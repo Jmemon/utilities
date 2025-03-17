@@ -77,18 +77,6 @@ def main() -> None:
     
     # Run the LLM to generate the docstring
     coder.run(prompt)
-    
-    # Apply and save changes
-    coder.apply_edits(coder.get_edits())
-    
-    # Stage the changes
-    for file_path in coder.get_edits().keys():
-        repo.git.add(file_path)
-    
-    # Commit the changes
-    commit_message = f"Add docstring for {args.target_component}"
-    repo.git.commit('-m', commit_message)
-    print(f"Changes saved and committed: {commit_message}")
 
 
 def find_files_using_component(repo_dir: Path, component_name: str, target_file: Path) -> List[Path]:
