@@ -79,21 +79,67 @@ def main() -> None:
             print("Changes saved successfully!")
             break
         else:
-            # Extract the current docstring to pass as previous for the next iteration
-            # This is a simplification - in a real implementation, you might want to
-            # extract the actual docstring from the diff
-            previous_docstring = "The previously generated docstring"  # Placeholder
-            try:
-                # Try to get the actual docstring from the coder's edit history
-                if hasattr(coder, 'last_edit') and coder.last_edit:
-                    previous_docstring = coder.last_edit
-            except:
-                pass
+            # Extract the current docstring from the diff
+            previous_docstring = extract_docstring_from_diff(coder)
                 
             feedback = input("Please provide feedback for improvement: ")
             if not feedback:
                 print("Exiting without saving changes.")
                 break
+
+
+def extract_docstring_from_diff(coder: Coder) -> str:
+    """
+    Extract the docstring from the coder's diff output.
+    
+    Args:
+        coder: The Coder instance with diff information
+        
+    Returns:
+        The extracted docstring as a string
+    """
+    # Get the diff from the coder
+    if not hasattr(coder, 'diffs') or not coder.diffs:
+        return ""
+    
+    # Look for added lines in the diff that are likely part of a docstring
+    docstring_lines = []
+    in_docstring = False
+    
+    for file_path, diff in coder.diffs.items():
+        for line in diff.split('\n'):
+            # Skip diff metadata lines
+            if line.startswith('+++') or line.startswith('---') or line.startswith('@@'):
+                continue
+                
+            # Look for added lines (start with '+')
+            if line.startswith('+'):
+                content = line[1:]  # Remove the '+' prefix
+                
+                # Check for docstring delimiters
+                if '"""' in content or "'''" in content:
+                    # If this is the start of a docstring
+                    if not in_docstring and (content.strip().startswith('"""') or content.strip().startswith("'''")):
+                        in_docstring = True
+                        # If it's a single line docstring, handle it
+                        if content.count('"""') >= 2 or content.count("'''") >= 2:
+                            docstring_lines.append(content)
+                            in_docstring = False
+                        else:
+                            docstring_lines.append(content)
+                    # If this is the end of a docstring
+                    elif in_docstring and (content.strip().endswith('"""') or content.strip().endswith("'''")):
+                        docstring_lines.append(content)
+                        in_docstring = False
+                    # If we're inside a docstring
+                    elif in_docstring:
+                        docstring_lines.append(content)
+                # If we're inside a docstring, add the line
+                elif in_docstring:
+                    docstring_lines.append(content)
+    
+    # Join the docstring lines
+    return '\n'.join(docstring_lines)
 
 
 def create_prompt(file_content: str, target_component: str, previous_docstring: str = "", feedback: str = "") -> str:
