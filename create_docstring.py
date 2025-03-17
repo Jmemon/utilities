@@ -8,9 +8,11 @@ and usage patterns.
 """
 
 import argparse
+import os
+import re
 import sys
 from pathlib import Path
-from typing import List
+from typing import List, Set
 
 from aider.models import Model
 from aider.coders import Coder
@@ -28,13 +30,21 @@ def main() -> None:
     parser = argparse.ArgumentParser(description="Generate docstrings for Python components")
     parser.add_argument("target_file", type=str, help="File containing the component to document")
     parser.add_argument("target_component", type=str, help="Name of function/method/class to document")
-    parser.add_argument("--references", type=str, nargs="*", default=[], 
-                        help="Files that reference the target component (for context)")
+    parser.add_argument("--repo-dir", type=str, default=".", 
+                        help="Repository directory to search for files using the target component")
     args = parser.parse_args()
 
     # Set up file paths
     editable_file = Path(args.target_file)
-    read_only_files = [Path(f) for f in args.references]
+    
+    # Find files that reference the target component
+    repo_dir = Path(args.repo_dir)
+    read_only_files = find_files_using_component(repo_dir, args.target_component, editable_file)
+    
+    if read_only_files:
+        print(f"Found {len(read_only_files)} files referencing '{args.target_component}':")
+        for file in read_only_files:
+            print(f"  - {file}")
 
     # Ensure target file exists
     if not editable_file.exists():
@@ -86,6 +96,50 @@ def main() -> None:
             if not feedback:
                 print("Exiting without saving changes.")
                 break
+
+
+def find_files_using_component(repo_dir: Path, component_name: str, target_file: Path) -> List[Path]:
+    """
+    Find all Python files in the repository that use the target component.
+    
+    Args:
+        repo_dir: The repository directory to search
+        component_name: The name of the component to look for
+        target_file: The file containing the component definition (to exclude from results)
+        
+    Returns:
+        A list of Path objects for files that reference the component
+    """
+    using_files: Set[Path] = set()
+    target_file = target_file.resolve()
+    
+    # Create a regex pattern to find uses of the component
+    # This handles cases like: function_name(), ClassName(), module.function_name(), etc.
+    pattern = re.compile(rf'(?<![a-zA-Z0-9_])({re.escape(component_name)})(?=\s*\(|\s*\.|\s*:|\s*$)')
+    
+    # Walk through the repository
+    for root, _, files in os.walk(repo_dir):
+        for file in files:
+            if not file.endswith('.py'):
+                continue
+                
+            file_path = Path(os.path.join(root, file)).resolve()
+            
+            # Skip the target file itself
+            if file_path == target_file:
+                continue
+                
+            try:
+                with open(file_path, 'r', encoding='utf-8') as f:
+                    content = f.read()
+                    
+                # Check if the component is used in this file
+                if pattern.search(content):
+                    using_files.add(file_path)
+            except Exception as e:
+                print(f"Warning: Could not read {file_path}: {e}", file=sys.stderr)
+    
+    return list(using_files)
 
 
 def extract_docstring_from_diff(coder: Coder) -> str:
