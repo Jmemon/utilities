@@ -8,13 +8,11 @@ and usage patterns.
 """
 
 import argparse
-import os
 import re
 import sys
 from pathlib import Path
 from typing import List, Set
 import git
-import tempfile
 
 from aider.models import Model
 from aider.coders import Coder
@@ -82,38 +80,10 @@ def main() -> None:
         # Run the LLM to generate the docstring
         coder.run(prompt)
         
-        # Print the diff using git
-        print("\nProposed docstring changes:")
-        
         # Get the modified content from coder
         modified_files = {}
         for file_path, content in coder.get_edits().items():
             modified_files[file_path] = content
-            
-            # Show diff for each file
-            file_path_obj = Path(file_path)
-            with open(file_path_obj, 'r') as f:
-                original_content = f.read()
-            
-            # Create temporary files for diff
-            with tempfile.NamedTemporaryFile(mode='w', suffix='.py', delete=False) as orig_tmp:
-                orig_tmp.write(original_content)
-                orig_tmp_path = orig_tmp.name
-            with tempfile.NamedTemporaryFile(mode='w', suffix='.py', delete=False) as new_tmp:
-                new_tmp.write(content)
-                new_tmp_path = new_tmp.name
-            
-            # Show diff using git
-            try:
-                diff = repo.git.diff('--no-index', '--color=always', orig_tmp_path, new_tmp_path)
-                print(diff)
-            except git.GitCommandError as e:
-                # Git returns exit code 1 if files differ, which raises an exception
-                print(e.stdout)
-            finally:
-                # Clean up temp files
-                os.unlink(orig_tmp_path)
-                os.unlink(new_tmp_path)
         
         # Get user feedback
         user_input = input("\nAccept these changes? (yes/no): ").strip().lower()
