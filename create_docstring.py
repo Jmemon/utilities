@@ -53,16 +53,15 @@ def main() -> None:
 
     # Initialize the LLM
     model = Model("claude-3-7-sonnet-latest")
-    io = InputOutput(yes=True)
     
     # Create the coder instance
     coder = Coder.create(
         main_model=model,
-        editable_files=[editable_file],
+        fnames=[editable_file],
         read_only_fnames=read_only_files,
         auto_commits=False,
         suggest_shell_commands=False,
-        io=io
+        io=InputOutput(yes=True)
     )
 
     # Read the target file content
