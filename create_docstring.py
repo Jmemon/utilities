@@ -72,38 +72,23 @@ def main() -> None:
     with open(editable_file, "r") as f:
         file_content = f.read()
 
-    # Create the initial prompt
-    feedback = ""
-    previous_docstring = ""
-    while True:
-        prompt = create_prompt(file_content, args.target_component, previous_docstring, feedback)
-        
-        # Run the LLM to generate the docstring
-        coder.run(prompt)
-        
-        # Get user feedback
-        user_input = input("\nAccept these changes? (yes/no): ").strip().lower()
-        if user_input in ["yes", "y"]:
-            # Apply and save changes
-            coder.apply_edits(coder.get_edits())
-            
-            # Stage the changes
-            for file_path in coder.get_edits().keys():
-                repo.git.add(file_path)
-            
-            # Commit the changes
-            commit_message = f"Add docstring for {args.target_component}"
-            repo.git.commit('-m', commit_message)
-            print(f"Changes saved and committed: {commit_message}")
-            break
-        else:
-            # Extract the current docstring from the diff
-            previous_docstring = extract_docstring_from_diff(coder)
-                
-            feedback = input("Please provide feedback for improvement: ")
-            if not feedback:
-                print("Exiting without saving changes.")
-                break
+    # Create the prompt
+    prompt = create_prompt(file_content, args.target_component)
+    
+    # Run the LLM to generate the docstring
+    coder.run(prompt)
+    
+    # Apply and save changes
+    coder.apply_edits(coder.get_edits())
+    
+    # Stage the changes
+    for file_path in coder.get_edits().keys():
+        repo.git.add(file_path)
+    
+    # Commit the changes
+    commit_message = f"Add docstring for {args.target_component}"
+    repo.git.commit('-m', commit_message)
+    print(f"Changes saved and committed: {commit_message}")
 
 
 def find_files_using_component(repo_dir: Path, component_name: str, target_file: Path) -> List[Path]:
@@ -204,15 +189,13 @@ def extract_docstring_from_diff(coder: Coder) -> str:
     return '\n'.join(docstring_lines)
 
 
-def create_prompt(file_content: str, target_component: str, previous_docstring: str = "", feedback: str = "") -> str:
+def create_prompt(file_content: str, target_component: str) -> str:
     """
     Creates prompts for LLMs to generate information-dense, machine-optimized docstrings.
     
     Args:
         file_content: Source code containing the target component
         target_component: Component name requiring documentation
-        previous_docstring: Previous docstring attempt (for iteration)
-        feedback: Specific improvement feedback
         
     Returns:
         Optimized LLM prompt for technical documentation extraction
@@ -262,20 +245,6 @@ Document with maximum technical precision:
 Return ONLY the docstring.
 ONLY document {target_component} at its highest-level scope.
 Use the context provided to inform your understanding of {target_component}/
-"""
-
-    if previous_docstring and feedback:
-        prompt += f"""
-
-## PREVIOUS ATTEMPT
-```python
-{previous_docstring}
-```
-
-## FEEDBACK
-{feedback}
-
-Address these issues while maintaining all requirements.
 """
 
     return prompt
