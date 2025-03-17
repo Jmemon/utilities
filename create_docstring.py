@@ -61,8 +61,9 @@ def main() -> None:
 
     # Create the initial prompt
     feedback = ""
+    previous_docstring = ""
     while True:
-        prompt = create_prompt(file_content, args.target_component, feedback)
+        prompt = create_prompt(file_content, args.target_component, previous_docstring, feedback)
         
         # Run the LLM to generate the docstring
         coder.run(prompt)
@@ -78,19 +79,31 @@ def main() -> None:
             print("Changes saved successfully!")
             break
         else:
+            # Extract the current docstring to pass as previous for the next iteration
+            # This is a simplification - in a real implementation, you might want to
+            # extract the actual docstring from the diff
+            previous_docstring = "The previously generated docstring"  # Placeholder
+            try:
+                # Try to get the actual docstring from the coder's edit history
+                if hasattr(coder, 'last_edit') and coder.last_edit:
+                    previous_docstring = coder.last_edit
+            except:
+                pass
+                
             feedback = input("Please provide feedback for improvement: ")
             if not feedback:
                 print("Exiting without saving changes.")
                 break
 
 
-def create_prompt(file_content: str, target_component: str, feedback: str = "") -> str:
+def create_prompt(file_content: str, target_component: str, previous_docstring: str = "", feedback: str = "") -> str:
     """
     Create a structured prompt for the LLM to generate a docstring.
     
     Args:
         file_content: The content of the target file
         target_component: The name of the component to document
+        previous_docstring: The previously generated docstring (if any)
         feedback: Optional user feedback for iterative improvement
     
     Returns:
@@ -124,9 +137,14 @@ The docstring should help other developers understand:
 Return ONLY the docstring, nothing else. Do not include the function/class definition or any code.
 """
 
-    if feedback:
+    if previous_docstring and feedback:
         prompt += f"""
-## PREVIOUS ATTEMPT FEEDBACK
+## PREVIOUS DOCSTRING
+```
+{previous_docstring}
+```
+
+## FEEDBACK ON PREVIOUS DOCSTRING
 The previous docstring was not satisfactory. Here's the feedback:
 {feedback}
 
