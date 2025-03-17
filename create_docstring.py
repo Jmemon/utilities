@@ -255,7 +255,7 @@ ONLY document {target_component} at its highest-level scope.
 Use the context provided to inform your understanding of {target_component}/
 """
 
-    if prior and feedback:
+    if previous_docstring and feedback:
         prompt += f"""
 
 ## PREVIOUS ATTEMPT
