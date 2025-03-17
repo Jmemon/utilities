@@ -198,57 +198,76 @@ def extract_docstring_from_diff(coder: Coder) -> str:
 
 def create_prompt(file_content: str, target_component: str, previous_docstring: str = "", feedback: str = "") -> str:
     """
-    Create a structured prompt for the LLM to generate a docstring.
+    Creates prompts for LLMs to generate information-dense, machine-optimized docstrings.
     
     Args:
-        file_content: The content of the target file
-        target_component: The name of the component to document
-        previous_docstring: The previously generated docstring (if any)
-        feedback: Optional user feedback for iterative improvement
-    
+        file_content: Source code containing the target component
+        target_component: Component name requiring documentation
+        previous_docstring: Previous docstring attempt (for iteration)
+        feedback: Specific improvement feedback
+        
     Returns:
-        A structured prompt string
+        Optimized LLM prompt for technical documentation extraction
     """
+    
     prompt = f"""
-# TASK: WRITE A HIGH-QUALITY DOCSTRING
+# GENERATE TECHNICAL DOCSTRING FOR '{target_component}'
 
-## CONTEXT
-I need you to write a comprehensive docstring for the '{target_component}' component in the provided code.
-The docstring should help other developers understand:
-1. What the component does and why it exists
-2. How it works at a high level
-3. Important implementation details and design decisions
-4. Usage patterns and examples where appropriate
-
-## CODE
+## SOURCE
 ```python
 {file_content}
 ```
 
-## INSTRUCTIONS
-1. ONLY modify the docstring for '{target_component}' - do not change any other code
-2. Write the docstring at the highest scope level of the component
-3. Follow PEP 257 conventions
-4. Be comprehensive but concise
-5. Include parameter descriptions, return values, and exceptions where applicable
-6. Explain WHY certain implementation choices were made, not just WHAT the code does
+## REQUIREMENTS
+Document with maximum technical precision:
 
-## OUTPUT FORMAT
-Return ONLY the docstring, nothing else. Do not include the function/class definition or any code.
+1. PURPOSE (1-3 sentences)
+   - Core responsibility and design philosophy
+
+2. ARCHITECTURE
+   - Structure, patterns, algorithms with complexity analysis
+
+3. INTERFACE
+   - Methods/functions: exact signatures, types, constraints
+   - Parameters: types, ranges, defaults, optionality
+   - Returns: types, structures, edge values
+   - Exceptions: triggers, handling requirements
+
+4. BEHAVIOR
+   - State management, thread safety, resource lifecycle
+   - Performance characteristics, caching strategy
+
+5. INTEGRATION
+   - Initialization, configuration, extension points
+   - Dependency patterns with concrete examples
+
+6. LIMITATIONS
+   - Known constraints, edge cases, bottlenecks
+   - Platform dependencies
+
+## FORMAT
+- PEP 257 compliant
+- Information-dense, technically precise
+- Document WHY, not just WHAT
+
+## OUTPUT
+Return ONLY the docstring.
+ONLY document {target_component} at its highest-level scope.
+Use the context provided to inform your understanding of {target_component}/
 """
 
-    if previous_docstring and feedback:
+    if prior and feedback:
         prompt += f"""
-## PREVIOUS DOCSTRING
-```
+
+## PREVIOUS ATTEMPT
+```python
 {previous_docstring}
 ```
 
-## FEEDBACK ON PREVIOUS DOCSTRING
-The previous docstring was not satisfactory. Here's the feedback:
+## FEEDBACK
 {feedback}
 
-Please address this feedback in your new docstring.
+Address these issues while maintaining all requirements.
 """
 
     return prompt
