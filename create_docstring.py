@@ -81,20 +81,14 @@ def main() -> None:
         # Run the LLM to generate the docstring
         coder.run(prompt)
         
-        # Get the modified content from coder
-        modified_files = {}
-        for file_path, content in coder.get_edits().items():
-            modified_files[file_path] = content
-        
         # Get user feedback
         user_input = input("\nAccept these changes? (yes/no): ").strip().lower()
         if user_input in ["yes", "y"]:
-            # Save changes using git
-            for file_path, content in modified_files.items():
-                with open(file_path, 'w') as f:
-                    f.write(content)
-                
-                # Stage the changes
+            # Apply and save changes
+            coder.apply_edits()
+            
+            # Stage the changes
+            for file_path in coder.get_edits().keys():
                 repo.git.add(file_path)
             
             # Commit the changes
