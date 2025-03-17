@@ -85,7 +85,7 @@ def main() -> None:
         user_input = input("\nAccept these changes? (yes/no): ").strip().lower()
         if user_input in ["yes", "y"]:
             # Apply and save changes
-            coder.apply_edits()
+            coder.apply_edits(coder.get_edits())
             
             # Stage the changes
             for file_path in coder.get_edits().keys():
