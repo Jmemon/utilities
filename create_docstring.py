@@ -13,6 +13,8 @@ import re
 import sys
 from pathlib import Path
 from typing import List, Set
+import git
+import tempfile
 
 from aider.models import Model
 from aider.coders import Coder
@@ -54,6 +56,9 @@ def main() -> None:
     # Initialize the LLM
     model = Model("claude-3-7-sonnet-latest")
     
+    # Initialize git repo
+    repo = git.Repo(repo_dir)
+    
     # Create the coder instance
     coder = Coder.create(
         main_model=model,
@@ -77,15 +82,54 @@ def main() -> None:
         # Run the LLM to generate the docstring
         coder.run(prompt)
         
-        # Print the diff
+        # Print the diff using git
         print("\nProposed docstring changes:")
-        coder.show_diffs()
+        
+        # Get the modified content from coder
+        modified_files = {}
+        for file_path, content in coder.get_edits().items():
+            modified_files[file_path] = content
+            
+            # Show diff for each file
+            file_path_obj = Path(file_path)
+            with open(file_path_obj, 'r') as f:
+                original_content = f.read()
+            
+            # Create temporary files for diff
+            with tempfile.NamedTemporaryFile(mode='w', suffix='.py', delete=False) as orig_tmp:
+                orig_tmp.write(original_content)
+                orig_tmp_path = orig_tmp.name
+            with tempfile.NamedTemporaryFile(mode='w', suffix='.py', delete=False) as new_tmp:
+                new_tmp.write(content)
+                new_tmp_path = new_tmp.name
+            
+            # Show diff using git
+            try:
+                diff = repo.git.diff('--no-index', '--color=always', orig_tmp_path, new_tmp_path)
+                print(diff)
+            except git.GitCommandError as e:
+                # Git returns exit code 1 if files differ, which raises an exception
+                print(e.stdout)
+            finally:
+                # Clean up temp files
+                os.unlink(orig_tmp_path)
+                os.unlink(new_tmp_path)
         
         # Get user feedback
         user_input = input("\nAccept these changes? (yes/no): ").strip().lower()
         if user_input in ["yes", "y"]:
-            coder.save_files()
-            print("Changes saved successfully!")
+            # Save changes using git
+            for file_path, content in modified_files.items():
+                with open(file_path, 'w') as f:
+                    f.write(content)
+                
+                # Stage the changes
+                repo.git.add(file_path)
+            
+            # Commit the changes
+            commit_message = f"Add docstring for {args.target_component}"
+            repo.git.commit('-m', commit_message)
+            print(f"Changes saved and committed: {commit_message}")
             break
         else:
             # Extract the current docstring from the diff
