@@ -198,13 +198,14 @@ def create_prompt(file_content: str, target_component: str) -> str:
 ```
 
 ## REQUIREMENTS
-Document with maximum technical precision:
+Document with a balance of technical precision and conciseness, favoring precision:
 
 1. PURPOSE (1-3 sentences)
    - Core responsibility and design philosophy
 
 2. ARCHITECTURE
    - Structure, patterns, algorithms with complexity analysis
+   - Prioritize key implementation details over exhaustive descriptions
 
 3. INTERFACE
    - Methods/functions: exact signatures, types, constraints
@@ -218,7 +219,7 @@ Document with maximum technical precision:
 
 5. INTEGRATION
    - Initialization, configuration, extension points
-   - Dependency patterns with concrete examples
+   - Dependency patterns with concise examples
 
 6. LIMITATIONS
    - Known constraints, edge cases, bottlenecks
