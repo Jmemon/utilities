@@ -68,7 +68,7 @@ def main():
     args = parser.parse_args()
     
     file_path = Path(args.file_path).resolve()
-    docstring_utility = Path.home() / "Desktop" / "utilities" / "create_docstring.py"
+    docstring_utility = Path.home() / "Desktop" / "utilities" / "docstring" / "create_docstring.py"
     
     # Verify the file exists
     if not file_path.exists() or not file_path.is_file():

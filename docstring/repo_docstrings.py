@@ -69,7 +69,7 @@ def main():
     args = parser.parse_args()
     
     src_dir = Path(args.src_dir).resolve()
-    docstring_utility = Path.home() / "Desktop" / "utilities" / "create_docstring.py"
+    docstring_utility = Path.home() / "Desktop" / "utilities" / "docstring" / "create_docstring.py"
     
     # Verify the source directory exists
     if not src_dir.exists() or not src_dir.is_dir():
