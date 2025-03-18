@@ -198,7 +198,11 @@ def create_prompt(file_content: str, target_component: str) -> str:
 ```
 
 ## REQUIREMENTS
-Document with a balance of technical precision and conciseness, favoring precision:
+First, evaluate if {target_component} already has a satisfactory docstring. If it does:
+- If the existing docstring is comprehensive and meets the criteria below, make NO CHANGES
+- Respond with "The existing docstring for {target_component} is satisfactory. No changes needed."
+
+If a new or improved docstring is needed, document with a balance of technical precision and conciseness, favoring precision:
 
 1. PURPOSE (1-3 sentences)
    - Core responsibility and design philosophy
@@ -231,7 +235,8 @@ Document with a balance of technical precision and conciseness, favoring precisi
 - Document WHY, not just WHAT
 
 ## OUTPUT
-Return ONLY the docstring.
+If the existing docstring is satisfactory, state that no changes are needed.
+Otherwise, return ONLY the new docstring.
 ONLY document {target_component} at its highest-level scope.
 Use the context provided to inform your understanding of {target_component}/
 """
